@@ -3,8 +3,8 @@
 * Description: the PortGo main entry point
 *   It supports tcp/udp protocol layer traffic forwarding, forward/reverse
 *   creation of forwarding links, and multi-level cascading use.
-* Author: knownsec404
-* Time: 2020.09.02
+* Author: sanduo
+* Time: 2021.01.18
  */
 
 package main
@@ -14,58 +14,93 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gookit/color"
+	"github.com/urfave/cli/v2"
 )
-
-const VERSION string = "version: 0.5.0(build-20201022)"
 
 /**********************************************************************
 * @Function: main()
-* @Description: the PortForward entry point, parse command-line argument
+* @Description: the PortGo entry point, parse command-line argument
 * @Parameter: nil
 * @Return: nil
 **********************************************************************/
 func main() {
-	if len(os.Args) != 4 {
-		usage()
-		return
+	app := cli.NewApp()
+	app.Name = "portGo"
+	app.Version = "V0.1"
+	app.Compiled = time.Now()
+	app.Authors = []*cli.Author{
+		&cli.Author{
+			Name:  "hksanduo",
+			Email: "hksanduo@gmail.com",
+		},
 	}
-	proto := os.Args[1]
-	sock1 := os.Args[2]
-	sock2 := os.Args[3]
-
-	// parse and check argument
-	protocol := PORTFORWARD_PROTO_TCP
-	if strings.ToUpper(proto) == "TCP" {
-		protocol = PORTFORWARD_PROTO_TCP
-	} else if strings.ToUpper(proto) == "UDP" {
-		protocol = PORTFORWARD_PROTO_UDP
-	} else {
-		color.Error.Println("unknown protocol [%s]\n", proto)
-		return
+	app.Usage = "port forward tools by go"
+	app.Commands = []*cli.Command{
+		{
+			Name:    "proto",
+			Aliases: []string{"p"},
+			Usage:   "set network proto",
+			Action: func(c *cli.Context) error {
+				fmt.Println("test: %q", c.Args().Get(0))
+				return nil
+			},
+		},
+	}
+	app.Flags = []*cli.Flag{
+		&cli.StringFlag{
+			Name:  "lang",
+			Value: "english",
+			Usage: "language for the greeting",
+		},
 	}
 
-	m1, a1, err := parseSock(sock1)
+	err := app.Run(os.Args)
 	if err != nil {
 		color.Error.Println(err)
-		return
-	}
-	m2, a2, err := parseSock(sock2)
-	if err != nil {
-		color.Error.Println(err)
-		return
 	}
 
-	// launch
-	args := Args{
-		Protocol: protocol,
-		Method1:  m1,
-		Addr1:    a1,
-		Method2:  m2,
-		Addr2:    a2,
-	}
-	Launch(args)
+	// if len(os.Args) != 4 {
+	// 	usage()
+	// 	return
+	// }
+	// proto := os.Args[1]
+	// sock1 := os.Args[2]
+	// sock2 := os.Args[3]
+
+	// // parse and check argument
+	// protocol := PORTFORWARD_PROTO_TCP
+	// if strings.ToUpper(proto) == "TCP" {
+	// 	protocol = PORTFORWARD_PROTO_TCP
+	// } else if strings.ToUpper(proto) == "UDP" {
+	// 	protocol = PORTFORWARD_PROTO_UDP
+	// } else {
+	// 	color.Error.Println("unknown protocol [%s]\n", proto)
+	// 	return
+	// }
+
+	// m1, a1, err := parseSock(sock1)
+	// if err != nil {
+	// 	color.Error.Println(err)
+	// 	return
+	// }
+	// m2, a2, err := parseSock(sock2)
+	// if err != nil {
+	// 	color.Error.Println(err)
+	// 	return
+	// }
+
+	// // launch
+	// args := Args{
+	// 	Protocol: protocol,
+	// 	Method1:  m1,
+	// 	Addr1:    a1,
+	// 	Method2:  m2,
+	// 	Addr2:    a2,
+	// }
+	// Launch(args)
 }
 
 /**********************************************************************
@@ -113,5 +148,4 @@ func usage() {
 	fmt.Println("  udp listen:192.168.1.3:5353 conn:8.8.8.8:53")
 	fmt.Println("  tcp listen:[fe80::1%lo0]:8888 conn:[fe80::1%lo0]:7777")
 	fmt.Println()
-	fmt.Println(VERSION)
 }
