@@ -27,6 +27,27 @@ import (
 * @Return: nil
 **********************************************************************/
 func main() {
+	var (
+		netproto string
+	)
+
+	cli.AppHelpTemplate = `NAME:
+	{{.Name}} - {{.Usage}}
+USAGE:
+	{{.HelpName}} {{if .VisibleFlags}}[global options]{{end}} [sock1] [sock2]
+VERSION:
+	{{.Version}}{{if len .Authors}}
+AUTHOR:
+	{{range .Authors}}{{ . }}{{end}}
+GLOBAL OPTIONS:
+	{{range .VisibleFlags}}{{.}}
+	{{end}}
+EXAMPLE:
+	{{.Name}} -P tcp conn:192.168.1.1:3389 conn:192.168.1.10:23333
+	{{.Name}} -p udp listen:192.168.1.3:5353 conn:8.8.8.8:53
+	{{.Name}} -p tcp listen:[fe80::1%lo0]:8888 conn:[fe80::1%lo0]:7777
+	{{end}}
+   `
 	app := cli.NewApp()
 	app.Name = "portGo"
 	app.Version = "V0.1"
@@ -38,69 +59,63 @@ func main() {
 		},
 	}
 	app.Usage = "port forward tools by go"
-	app.Commands = []*cli.Command{
-		{
-			Name:    "proto",
-			Aliases: []string{"p"},
-			Usage:   "set network proto",
-			Action: func(c *cli.Context) error {
-				fmt.Println("test: %q", c.Args().Get(0))
-				return nil
-			},
+	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:        "proto",
+			Aliases:     []string{"p"},
+			Usage:       "set network proto is `tcp`",
+			Value:       "tcp",
+			Destination: &netproto,
 		},
 	}
-	app.Flags = []*cli.Flag{
-		&cli.StringFlag{
-			Name:  "lang",
-			Value: "english",
-			Usage: "language for the greeting",
-		},
+
+	app.Action = func(c *cli.Context) error {
+
+		if len(os.Args) != 4 {
+			return nil
+		}
+
+		sock1 := c.Args().Get(1)
+		sock2 := c.Args().Get(2)
+		proto := netproto
+		// parse and check argument
+		protocol := PORTFORWARD_PROTO_TCP
+		if strings.ToUpper(proto) == "TCP" {
+			protocol = PORTFORWARD_PROTO_TCP
+		} else if strings.ToUpper(proto) == "UDP" {
+			protocol = PORTFORWARD_PROTO_UDP
+		} else {
+			color.Error.Println("unknown protocol [%s]\n", proto)
+			return nil
+		}
+
+		m1, a1, err := parseSock(sock1)
+		if err != nil {
+			color.Error.Println(err)
+			return nil
+		}
+		m2, a2, err := parseSock(sock2)
+		if err != nil {
+			color.Error.Println(err)
+			return nil
+		}
+
+		// launch
+		args := Args{
+			Protocol: protocol,
+			Method1:  m1,
+			Addr1:    a1,
+			Method2:  m2,
+			Addr2:    a2,
+		}
+		Launch(args)
+		return nil
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
 		color.Error.Println(err)
 	}
-
-	// if len(os.Args) != 4 {
-	// 	usage()
-	// 	return
-	// }
-	// proto := os.Args[1]
-	// sock1 := os.Args[2]
-	// sock2 := os.Args[3]
-
-	// // parse and check argument
-	// protocol := PORTFORWARD_PROTO_TCP
-	// if strings.ToUpper(proto) == "TCP" {
-	// 	protocol = PORTFORWARD_PROTO_TCP
-	// } else if strings.ToUpper(proto) == "UDP" {
-	// 	protocol = PORTFORWARD_PROTO_UDP
-	// } else {
-	// 	color.Error.Println("unknown protocol [%s]\n", proto)
-	// 	return
-	// }
-
-	// m1, a1, err := parseSock(sock1)
-	// if err != nil {
-	// 	color.Error.Println(err)
-	// 	return
-	// }
-	// m2, a2, err := parseSock(sock2)
-	// if err != nil {
-	// 	color.Error.Println(err)
-	// 	return
-	// }
-
-	// // launch
-	// args := Args{
-	// 	Protocol: protocol,
-	// 	Method1:  m1,
-	// 	Addr1:    a1,
-	// 	Method2:  m2,
-	// 	Addr2:    a2,
-	// }
-	// Launch(args)
 }
 
 /**********************************************************************
@@ -128,24 +143,4 @@ func parseSock(sock string) (uint8, string, error) {
 		errmsg := fmt.Sprintf("unknown method [%s]", method)
 		return PORTFORWARD_SOCK_NIL, "", errors.New(errmsg)
 	}
-}
-
-/**********************************************************************
-* @Function: usage()
-* @Description: the PortForward usage
-* @Parameter: nil
-* @Return: nil
-**********************************************************************/
-func usage() {
-	fmt.Println("Usage:")
-	fmt.Println("  ./portGo [proto] [sock1] [sock2]")
-	fmt.Println("Option:")
-	fmt.Println("  proto      the port forward with protocol(tcp/udp)")
-	fmt.Println("  sock       format: [method:address:port]")
-	fmt.Println("  method     the sock mode(listen/conn)")
-	fmt.Println("Example:")
-	fmt.Println("  tcp conn:192.168.1.1:3389 conn:192.168.1.10:23333")
-	fmt.Println("  udp listen:192.168.1.3:5353 conn:8.8.8.8:53")
-	fmt.Println("  tcp listen:[fe80::1%lo0]:8888 conn:[fe80::1%lo0]:7777")
-	fmt.Println()
 }
