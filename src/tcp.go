@@ -3,15 +3,16 @@
 * Description: the PortForward tcp layer implement
 * Author: knownsec404
 * Time: 2020.09.23
-*/
+ */
 
 package main
 
 import (
-    "net"
-    "time"
-)
+	"net"
+	"time"
 
+	"github.com/gookit/color"
+)
 
 /**********************************************************************
 * @Function: ListenTCP(address string, clientc chan Conn, quit chan bool)
@@ -23,47 +24,47 @@ import (
 * @Return: nil
 **********************************************************************/
 func ListenTCP(address string, clientc chan Conn, quit chan bool) {
-    addr, err := net.ResolveTCPAddr("tcp", address)
-    if err != nil {
-        LogError("tcp listen error, %s", err)
-        clientc <- nil
-        return
-    }
-    serv, err := net.ListenTCP("tcp", addr)
-    if err != nil {
-        LogError("tcp listen error, %s", err)
-        clientc <- nil
-        return
-    }
-    // the "conn" has been ready, close "serv"
-    defer serv.Close()
+	addr, err := net.ResolveTCPAddr("tcp", address)
+	if err != nil {
+		color.Error.Println(time.Now().Format("01-02|15:04:05"), "Error", "tcp listen error, ", err)
+		clientc <- nil
+		return
+	}
+	serv, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		color.Error.Println(time.Now().Format("01-02|15:04:05"), "Error", "tcp listen error, ", err)
+		clientc <- nil
+		return
+	}
+	// the "conn" has been ready, close "serv"
+	defer serv.Close()
 
-    for {
-        // check quit
-        select {
-        case <-quit:
-            return
-        default:
-        }
+	for {
+		// check quit
+		select {
+		case <-quit:
+			return
+		default:
+		}
 
-        // set "Accept" timeout, for check "quit" signal
-        serv.SetDeadline(time.Now().Add(16 * time.Second))
-        conn, err := serv.Accept()
-        if err != nil {
-            if err, ok := err.(net.Error); ok && err.Timeout() {
-                continue
-            }
-            // others error
-            LogError("tcp listen error, %s", err)
-            clientc <- nil
-            break
-        }
+		// set "Accept" timeout, for check "quit" signal
+		serv.SetDeadline(time.Now().Add(16 * time.Second))
+		conn, err := serv.Accept()
+		if err != nil {
+			if err, ok := err.(net.Error); ok && err.Timeout() {
+				continue
+			}
+			// others error
+			color.Error.Println(time.Now().Format("01-02|15:04:05"), "Error", "tcp listen error, ", err)
+			// LogError("tcp listen error, %s", err)
+			clientc <- nil
+			break
+		}
 
-        // new client is connected
-        clientc <- conn
-    } // end for
+		// new client is connected
+		clientc <- conn
+	} // end for
 }
-
 
 /**********************************************************************
 * @Function: ConnTCP(address string) (Conn, error)
@@ -72,10 +73,10 @@ func ListenTCP(address string, clientc chan Conn, quit chan bool) {
 * @Return: (Conn, error), the tcp connection and error
 **********************************************************************/
 func ConnTCP(address string) (Conn, error) {
-    conn, err := net.DialTimeout("tcp", address, 10 * time.Second)
-    if err != nil {
-        return nil, err
-    }
+	conn, err := net.DialTimeout("tcp", address, 10*time.Second)
+	if err != nil {
+		return nil, err
+	}
 
-    return conn, nil
+	return conn, nil
 }

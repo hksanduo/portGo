@@ -70,14 +70,12 @@ EXAMPLE:
 	}
 
 	app.Action = func(c *cli.Context) error {
-
-		if len(os.Args) != 4 {
-			return nil
-		}
-
-		sock1 := c.Args().Get(1)
-		sock2 := c.Args().Get(2)
+		sock1 := c.Args().Get(0)
+		sock2 := c.Args().Get(1)
 		proto := netproto
+		color.Info.Println("sock1 is ：", sock1)
+		color.Info.Println("sock2 is ：", sock2)
+		color.Info.Println("proto is ：", proto)
 		// parse and check argument
 		protocol := PORTFORWARD_PROTO_TCP
 		if strings.ToUpper(proto) == "TCP" {
